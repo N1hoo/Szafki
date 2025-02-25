@@ -7,13 +7,13 @@ def connect():
     return sqlite3.connect(DB_NAME)
 
 # 1️⃣ Dodawanie nowej szafki
-def dodaj_szafke(miejsce, typ, nr_szafki, nr_zamka, plec, segment, kod_pracownika, nazwisko, imie, dzial, stanowisko, zmiana, komentarz):
+def dodaj_szafke(miejsce, typ, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz):
     conn = connect()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO szafki (Miejsce, Typ, Nr_szafki, Nr_zamka, Płeć, Segment, Kod_pracownika, Nazwisko, Imię, Dział, Stanowisko, Zmiana, Komentarz)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (miejsce, typ, nr_szafki, nr_zamka, plec, segment, kod_pracownika, nazwisko, imie, dzial, stanowisko, zmiana, komentarz))
+        INSERT INTO szafki (Miejsce, Typ, Nr_szafki, Nr_zamka, Płeć_Szatni, Kod_pracownika, Nazwisko, Imię, Dział, Stanowisko, Płeć, Zmiana, Status, Komentarz)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (miejsce, typ, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz))
     conn.commit()
     conn.close()
 
@@ -27,13 +27,13 @@ def pobierz_szafki():
     return rows
 
 # 3️⃣ Edycja szafki
-def edytuj_szafke(id, miejsce, typ, nr_szafki, nr_zamka, plec, segment, kod_pracownika, nazwisko, imie, dzial, stanowisko, zmiana, komentarz):
+def edytuj_szafke(id, miejsce, typ, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz):
     conn = connect()
     cursor = conn.cursor()
     cursor.execute("""
-        UPDATE szafki SET Miejsce=?, Typ=?, Nr_szafki=?, Nr_zamka=?, Płeć=?, Segment=?, Kod_pracownika=?, Nazwisko=?, Imię=?, Dział=?, Stanowisko=?, Zmiana=?, Komentarz=?
+        UPDATE szafki SET Miejsce=?, Typ=?, Nr_szafki=?, Nr_zamka=?, Płec_szatni=?, Kod_pracownika=?, Nazwisko=?, Imię=?, Dział=?, Stanowisko=?, Płeć=?, Zmiana=?, Status, Komentarz=?
         WHERE ID=?
-    """, (miejsce, typ, nr_szafki, nr_zamka, plec, segment, kod_pracownika, nazwisko, imie, dzial, stanowisko, zmiana, komentarz, id))
+    """, (miejsce, typ, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz, id))
     conn.commit()
     conn.close()
 

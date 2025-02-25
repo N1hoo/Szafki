@@ -1,19 +1,30 @@
+import msoffcrypto
 import pandas as pd
+import io
 
-# Pełna ścieżka do pliku Excel na serwerze
-PLIK_PRACOWNIKOW = r"R:\Kadry\Analizy i kalkulacje - Paweł\Szafki\Lista osób.xlsx"
+sciezka_pliku = r"R:\Kadry\Analizy i kalkulacje - Paweł\Szafki\pracownicy.xlsx"
+haslo = "poznan13"
 
-def znajdz_pracownika(kod_pracownika, sciezka_pliku=PLIK_PRACOWNIKOW):
+
+def znajdz_pracownika(kod_pracownika, sciezka_pliku, haslo):
     """
-    Szuka danych pracownika w pliku Excel.
-    Zwraca słownik z danymi lub None, jeśli nie znaleziono.
+    Szuka danych pracownika w pliku Excel zabezpieczonym hasłem.
     """
     try:
-        # Wczytanie Excela
-        df = pd.read_excel(sciezka_pliku, engine='openpyxl')
+        # Otwieramy zaszyfrowany plik
+        with open(sciezka_pliku, "rb") as f:
+            file = msoffcrypto.OfficeFile(f)
+            file.load_key(password=haslo)
 
-        # Szukamy pracownika po kolumnie "Symbol"
-        wynik = df[df['Symbol'] == int(kod_pracownika)]  # Zakładamy, że kod jest liczbą
+            # Odszyfrowujemy plik do pamięci
+            decrypted = io.BytesIO()
+            file.decrypt(decrypted)
+
+            # Wczytujemy plik do pandas
+            df = pd.read_excel(decrypted, engine='openpyxl')
+
+        # Szukamy pracownika po "Symbol"
+        wynik = df[df['Symbol'] == int(kod_pracownika)]
 
         if not wynik.empty:
             return {
@@ -21,7 +32,7 @@ def znajdz_pracownika(kod_pracownika, sciezka_pliku=PLIK_PRACOWNIKOW):
                 "Imię": wynik.iloc[0]["Imię"],
                 "Dział": wynik.iloc[0]["Jedn.org.-nazwa"],
                 "Stanowisko": wynik.iloc[0]["Stanowisko-nazwa"],
-                "Płeć": wynik.iloc[0]["Płeć"]  # Można pominąć, jeśli nie potrzebne
+                "Płeć": wynik.iloc[0]["Płeć"]
             }
         else:
             return None

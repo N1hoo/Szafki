@@ -44,3 +44,25 @@ def usun_szafke(id):
     cursor.execute("DELETE FROM szafki WHERE ID=?", (id,))
     conn.commit()
     conn.close()
+
+def znajdz_pracownika_w_db(kod):
+    conn = connect()
+    c = conn.cursor()
+    c.execute("""
+        SELECT Nazwisko, Imię, Dział, Stanowisko, Płeć
+        FROM szafki
+        WHERE Kod_pracownika=?
+        LIMIT 1
+    """, (kod,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {
+            "Nazwisko": row[0],
+            "Imię": row[1],
+            "Dział": row[2],
+            "Stanowisko": row[3],
+            "Płeć": row[4]
+        }
+    else:
+        return None

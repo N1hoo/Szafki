@@ -53,29 +53,21 @@ class Ui_MainWindow(object):
         self.DodajSz = QtWidgets.QPushButton(parent=self.SzafkiTab)
         self.DodajSz.setGeometry(QtCore.QRect(700, 40, 101, 31))
         self.DodajSz.setObjectName("DodajSz")
-        self.SortWolne = QtWidgets.QCheckBox(parent=self.SzafkiTab)
-        self.SortWolne.setGeometry(QtCore.QRect(360, 50, 117, 20))
-        self.SortWolne.setObjectName("SortWolne")
-        self.TypSz = QtWidgets.QComboBox(parent=self.SzafkiTab)
-        self.TypSz.setEnabled(False)
-        self.TypSz.setGeometry(QtCore.QRect(180, 40, 91, 31))
-        self.TypSz.setCurrentText("")
-        self.TypSz.setObjectName("TypSz")
-        self.NrSz = QtWidgets.QLineEdit(parent=self.SzafkiTab)
-        self.NrSz.setGeometry(QtCore.QRect(280, 40, 71, 31))
-        self.NrSz.setObjectName("NrSz")
         self.label_6 = QtWidgets.QLabel(parent=self.SzafkiTab)
         self.label_6.setGeometry(QtCore.QRect(10, 20, 40, 16))
         self.label_6.setObjectName("label_6")
-        self.label_7 = QtWidgets.QLabel(parent=self.SzafkiTab)
-        self.label_7.setGeometry(QtCore.QRect(180, 20, 18, 16))
-        self.label_7.setObjectName("label_7")
-        self.label_8 = QtWidgets.QLabel(parent=self.SzafkiTab)
-        self.label_8.setGeometry(QtCore.QRect(280, 20, 45, 16))
-        self.label_8.setObjectName("label_8")
         self.groupBox = QtWidgets.QGroupBox(parent=self.SzafkiTab)
-        self.groupBox.setGeometry(QtCore.QRect(0, 0, 491, 81))
+        self.groupBox.setGeometry(QtCore.QRect(0, 0, 391, 81))
         self.groupBox.setObjectName("groupBox")
+        self.SortWolne = QtWidgets.QCheckBox(parent=self.groupBox)
+        self.SortWolne.setGeometry(QtCore.QRect(260, 50, 117, 20))
+        self.SortWolne.setObjectName("SortWolne")
+        self.NrSz = QtWidgets.QLineEdit(parent=self.groupBox)
+        self.NrSz.setGeometry(QtCore.QRect(180, 40, 71, 31))
+        self.NrSz.setObjectName("NrSz")
+        self.label_8 = QtWidgets.QLabel(parent=self.groupBox)
+        self.label_8.setGeometry(QtCore.QRect(180, 20, 45, 16))
+        self.label_8.setObjectName("label_8")
         self.groupBox.raise_()
         self.TabelaSzafek.raise_()
         self.PrzydzielSz.raise_()
@@ -83,12 +75,7 @@ class Ui_MainWindow(object):
         self.ZwolnijSz.raise_()
         self.MiejsceCB.raise_()
         self.DodajSz.raise_()
-        self.SortWolne.raise_()
-        self.TypSz.raise_()
-        self.NrSz.raise_()
         self.label_6.raise_()
-        self.label_7.raise_()
-        self.label_8.raise_()
         self.SzafkiWidget.addTab(self.SzafkiTab, "")
         self.PracownicyTab = QtWidgets.QWidget()
         self.PracownicyTab.setObjectName("PracownicyTab")
@@ -155,10 +142,9 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.SzafkiWidget.setCurrentIndex(1)
+        self.SzafkiWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-        MainWindow.setTabOrder(self.MiejsceCB, self.TypSz)
-        MainWindow.setTabOrder(self.TypSz, self.NrSz)
+        MainWindow.setTabOrder(self.MiejsceCB, self.NrSz)
         MainWindow.setTabOrder(self.NrSz, self.SortWolne)
         MainWindow.setTabOrder(self.SortWolne, self.DodajSz)
         MainWindow.setTabOrder(self.DodajSz, self.PrzydzielSz)
@@ -190,13 +176,12 @@ class Ui_MainWindow(object):
         self.MiejsceCB.setWhatsThis(_translate("MainWindow", "Pole wyboru lokalizacji szafek"))
         self.DodajSz.setWhatsThis(_translate("MainWindow", "Dodawanie szafki pustej lub z pracownikiem"))
         self.DodajSz.setText(_translate("MainWindow", "Dodaj szafkę"))
+        self.label_6.setText(_translate("MainWindow", "Miejsce"))
+        self.groupBox.setTitle(_translate("MainWindow", "Filtry"))
         self.SortWolne.setWhatsThis(_translate("MainWindow", "Filtruje listę tylko do szafek ze statusem \"wolna\""))
         self.SortWolne.setText(_translate("MainWindow", "Tylko wolne szafki"))
         self.NrSz.setWhatsThis(_translate("MainWindow", "Filtrowanie listy po numerze szafki"))
-        self.label_6.setText(_translate("MainWindow", "Miejsce"))
-        self.label_7.setText(_translate("MainWindow", "Typ"))
         self.label_8.setText(_translate("MainWindow", "Nr szafki"))
-        self.groupBox.setTitle(_translate("MainWindow", "Filtry"))
         self.SzafkiWidget.setTabText(self.SzafkiWidget.indexOf(self.SzafkiTab), _translate("MainWindow", "Szafki"))
         self.PrzydzielSzPr.setWhatsThis(_translate("MainWindow", "Przydzielanie szafki do pracownika"))
         self.PrzydzielSzPr.setText(_translate("MainWindow", "Przydziel szafkę"))
@@ -233,7 +218,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         self.PrzydzielSz.clicked.connect(self.on_przydziel_szafke)
         self.SortWolne.stateChanged.connect(self.filtruj_tabele_szafek)
         self.MiejsceCB.currentIndexChanged.connect(self.filtruj_tabele_szafek)
-        self.TypSz.currentIndexChanged.connect(self.filtruj_tabele_szafek)
         self.NrSz.textChanged.connect(self.filtruj_tabele_szafek)
 
         # Zakładka "Pracownicy"
@@ -264,22 +248,17 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
             return
 
         miejsce_filtr = self.MiejsceCB.currentText().strip()
-        typ_filtr = self.TypSz.currentText().strip()
         nr_filtr = self.NrSz.text().strip()
         tylko_wolne = self.SortWolne.isChecked()
 
         # Przykład prostego filtrowania w pythonie:
         lista_filtrowana = []
         for row in self._wszystkie_szafki:
-            (id_sz, miejsce, typ, nr_sz, nr_zamka, plec_szat, kod_prac,
+            (id_sz, miejsce, nr_sz, nr_zamka, plec_szat, kod_prac,
              nazw, imie, dzial, stan, plec, zm, status, komentarz) = row
 
             # Filtr Miejsce
             if miejsce_filtr and miejsce_filtr != miejsce:
-                continue
-
-            # Filtr Typ
-            if typ_filtr and typ_filtr != typ:
                 continue
 
             # Filtr Nr szafki (jeśli wprowadzony)
@@ -305,7 +284,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         self.TabelaSzafek.setRowCount(len(lista_szafek))
 
         # Możesz ustawić nagłówki kolumn:
-        naglowki = ["ID", "Miejsce", "Typ", "Nr_szafki", "Nr_zamka",
+        naglowki = ["ID", "Miejsce", "Nr_szafki", "Nr_zamka",
                     "Płeć_szatni", "Kod_pracownika", "Nazwisko", "Imię",
                     "Dział", "Stanowisko", "Płeć", "Zmiana", "Status", "Komentarz"]
         self.TabelaSzafek.setHorizontalHeaderLabels(naglowki)
@@ -326,18 +305,13 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         ui = Ui_DodajSzafki()
         ui.setupUi(dialog)
 
-        # ewentualnie wypełnianie comboboxów
         ui.StatusSzDS.addItems(["Wolna", "Nieczynna"])
         ui.PlecDS.addItems(["Kobieta", "Mężczyzna", "Neutralna"])
-        # ...
 
         def klik_dodaj():
             print("klik_dodaj() – tworzymy nową szafkę w db")
-            # zbieramy dane z ui (ui.MiejsceDS, ui.TypDS, itp.)
-            # ...
             dodaj_szafke(
                 miejsce=ui.MiejsceDS.currentText(),
-                typ=ui.TypDS.currentText(),
                 nr_szafki=int(ui.NrSzDS.text()) if ui.NrSzDS.text() else None,
                 nr_zamka=int(ui.KodZDS.text()) if ui.KodZDS.text() else None,
                 plec_szatni=ui.PlecDS.currentText(),
@@ -375,7 +349,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         # Odczyt aktualnych wartości (dla uproszczenia - odczyt z TabelaSzafek)
         aktualne = [self.TabelaSzafek.item(wiersz, col).text() for col in range(15)]
         # Rozbijmy je:
-        (_id, miejsce, typ, nr_s, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, stat, kom) = aktualne
+        (_id, miejsce, nr_s, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, stat, kom) = aktualne
 
         # Otwieramy dialog "DodawanieSzafek", ale w trybie edycji
         dialog = QDialog(self)
@@ -388,7 +362,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
 
         # Ustawiamy wartości
         ui.MiejsceDS.setEditText(miejsce)
-        ui.TypDS.setCurrentText(typ)
         ui.NrSzDS.setText(nr_s)
         ui.KodZDS.setText(nr_z)
         ui.PlecDS.addItems(["Kobieta", "Mężczyzna", "Neutralna"])
@@ -403,7 +376,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
 
         def klik_zapisz():
             nowe_miejsce = ui.MiejsceDS.currentText().strip()
-            nowe_typ = ui.TypDS.currentText().strip()
             nowe_nr_s = ui.NrSzDS.text().strip()
             nowe_nr_z = ui.KodZDS.text().strip()
             nowe_plec_sz = ui.PlecDS.currentText().strip()
@@ -413,7 +385,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
             edytuj_szafke(
                 id_szafki=id_szafki,
                 miejsce=nowe_miejsce,
-                typ=nowe_typ,
                 nr_szafki=int(nowe_nr_s) if nowe_nr_s else None,
                 nr_zamka=int(nowe_nr_z) if nowe_nr_z else None,
                 plec_szatni=nowe_plec_sz,
@@ -447,13 +418,12 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         id_szafki = int(self.TabelaSzafek.item(wiersz, 0).text())
         # Odczytujemy resztę:
         aktualne = [self.TabelaSzafek.item(wiersz, col).text() for col in range(15)]
-        (_id, miejsce, typ, nr_s, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, stat, kom) = aktualne
+        (_id, miejsce, nr_s, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, stat, kom) = aktualne
 
         # Ustawiamy status="Wolna", czyścimy dane
         edytuj_szafke(
             id_szafki=id_szafki,
             miejsce=miejsce,
-            typ=typ,
             nr_szafki=int(nr_s) if nr_s else None,
             nr_zamka=int(nr_z) if nr_z else None,
             plec_szatni=plec_sz,
@@ -509,7 +479,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
 
         lista = []
         for row in self._wszyscy_pracownicy:
-            (id_sz, miejsce, typ, nr_sz, nr_zamka, plec_szat, kod_prac,
+            (id_sz, miejsce, nr_sz, nr_zamka, plec_szat, kod_prac,
              nazw, im, dz, stan, plec, zm, status, kom) = row
 
             # Jeżeli brak kodu pracownika, to ignorujemy (bo to 'pusta' szafka)
@@ -535,7 +505,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
     def _wyswietl_pracownikow_w_tabeli(self, lista_prac):
         """
         Ustawia TabelaPracownikow w sposób: 
-        [Kod pracownika, Nazwisko, Imię, Płeć, Dział, Stanowisko, Miejsce szafki, Typ szafki, Nr szafki, Nr zamka, Status szafki, ...]
+        [Kod pracownika, Nazwisko, Imię, Płeć, Dział, Stanowisko, Miejsce szafki, Nr szafki, Nr zamka, Status szafki, ...]
         Dla uproszczenia wyświetlamy 1 wiersz = 1 rekord z tab. 'szafki'.
         """
         self.TabelaPracownikow.clear()
@@ -543,17 +513,17 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         self.TabelaPracownikow.setRowCount(len(lista_prac))
 
         naglowki = ["Kod prac.", "Nazwisko", "Imię", "Płeć", "Dział",
-                    "Stanowisko", "Miejsce szafki", "Typ szafki",
+                    "Stanowisko", "Miejsce szafki",
                     "Nr szafki", "Nr zamka", "Status", "ID szafki"]
         self.TabelaPracownikow.setHorizontalHeaderLabels(naglowki)
 
         for i, row in enumerate(lista_prac):
-            (id_sz, miejsce, typ, nr_sz, nr_z, plec_sz, kod_prac,
+            (id_sz, miejsce, nr_sz, nr_z, plec_sz, kod_prac,
              nazw, im, dz, stan, plec, zm, status, kom) = row
 
             wartosci = [
                 kod_prac, nazw, im, plec, dz,
-                stan, miejsce, typ, nr_sz, nr_z, status, id_sz
+                stan, miejsce, nr_sz, nr_z, status, id_sz
             ]
             for j, val in enumerate(wartosci):
                 item = QtWidgets.QTableWidgetItem(str(val) if val is not None else "")
@@ -621,14 +591,13 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         kod_prac = self.TabelaPracownikow.item(wiersz, 0).text()
         # Najprostsze podejście: pobieramy wszystkie szafki z tym kodem i czyścimy
         for row in self._wszyscy_pracownicy:
-            (id_sz, miejsce, typ, nr_sz, nr_z, plec_sz, kodp,
+            (id_sz, miejsce, nr_sz, nr_z, plec_sz, kodp,
              nazw, im, dz, stan, pl, zm, status, kom) = row
             if kodp == kod_prac:
                 # Ustawiamy status na "Wolna"
                 edytuj_szafke(
                     id_szafki=id_sz,
                     miejsce=miejsce,
-                    typ=typ,
                     nr_szafki=nr_sz,
                     nr_zamka=nr_z,
                     plec_szatni=plec_sz,

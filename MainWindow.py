@@ -9,6 +9,7 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMainWindow, QDialog, QMessageBox
 from PyQt6.QtCore import Qt
+import sqlite3  # <-- Add this import
 
 # ---- pliki z logiką/bazą/Excel: ----
 from database import (
@@ -452,8 +453,13 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         dialog = QDialog(self)
         ui = Ui_Dialog()
         ui.setupUi(dialog)
-
-        # Podpinasz on_kod_changed itp.
+    def usun_szafke(id):
+        conn = sqlite3.connect('szafki.db')  # Use your actual database file here
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM szafki WHERE ID=?", (id,))
+        conn.commit()
+        conn.close()
+        conn.close()
 
     # --------------------------------------------------
     #                OBSŁUGA TABELI "PRACOWNICY"
@@ -544,10 +550,12 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         ui = Ui_Dialog()
         ui.setupUi(dialog)
 
-        wynik = dialog.exec()
-        if wynik == int(QDialog.DialogCode.Rejected):
-            return
+        ui.KodPracDP.textChanged.connect(self.on_kod_changed)
 
+        wynik = dialog.exec()
+        if wynik == QDialog.DialogCode.Accepted:
+            self.zaladuj_pracownikow_do_tabeli()
+        
         # Sprawdzamy, czy któryś wiersz jest zaznaczony
         wiersz = self.TabelaPracownikow.currentRow()
         if wiersz >= 0: 
@@ -577,6 +585,23 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         # Jeśli użytkownik zatwierdził (QDialog.Accepted), odświeżamy listę pracowników
         if wynik == QDialog.Accepted:
             self.zaladuj_pracownikow_do_tabeli()
+
+    def on_kod_changed(self):
+        kod = self.sender().text().strip()
+        if len(kod) != 6:
+            return  # poczekaj, aż użytkownik wpisze cały kod
+
+        from pracownicy import pobierz_dane_pracownika
+        dane = pobierz_dane_pracownika(kod)
+        if dane:
+            dialog = self.sender().parent()
+            dialog.ImieDP.setText(dane['Imię'])
+            dialog.NazwiskoDP.setText(dane['Nazwisko'])
+            dialog.StanowiskoDP.setCurrentText(dane['Stanowisko'])
+            dialog.DzialDP.setCurrentText(dane['Dział'])
+            dialog.PlecDP.setCurrentText(dane['Płeć'])
+        else:
+            QMessageBox.warning(self, "Brak danych", f"Nie znaleziono pracownika z kodem {kod}.")
 
     def on_usun_pracownika(self):
         """

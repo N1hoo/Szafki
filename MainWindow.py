@@ -13,7 +13,6 @@ from PyQt6.QtCore import Qt
 # ---- pliki z logiką/bazą/Excel: ----
 from database import (
     pobierz_szafki, dodaj_szafke, edytuj_szafke, usun_szafke,
-    znajdz_pracownika_w_db
 )
 
 # ---- pliki wygenerowane przez pyuic6 ----
@@ -23,35 +22,35 @@ from DodajPracownika import Ui_Dialog
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1122, 740)
+        MainWindow.resize(1850, 950)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.SzafkiWidget = QtWidgets.QTabWidget(parent=self.centralwidget)
-        self.SzafkiWidget.setGeometry(QtCore.QRect(0, 0, 1121, 811))
+        self.SzafkiWidget.setGeometry(QtCore.QRect(0, 0, 1800, 811))
         self.SzafkiWidget.setObjectName("SzafkiWidget")
         self.SzafkiTab = QtWidgets.QWidget()
         self.SzafkiTab.setObjectName("SzafkiTab")
         self.TabelaSzafek = QtWidgets.QTableWidget(parent=self.SzafkiTab)
-        self.TabelaSzafek.setGeometry(QtCore.QRect(10, 90, 1101, 691))
+        self.TabelaSzafek.setGeometry(QtCore.QRect(10, 90, 1750, 900))
         self.TabelaSzafek.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.AllEditTriggers)
         self.TabelaSzafek.setRowCount(0)
         self.TabelaSzafek.setObjectName("TabelaSzafek")
-        self.TabelaSzafek.setColumnCount(0)
+        self.TabelaSzafek.setColumnCount(14)
         self.PrzydzielSz = QtWidgets.QPushButton(parent=self.SzafkiTab)
-        self.PrzydzielSz.setGeometry(QtCore.QRect(800, 40, 101, 31))
+        self.PrzydzielSz.setGeometry(QtCore.QRect(1160, 50, 101, 31))
         self.PrzydzielSz.setObjectName("PrzydzielSz")
         self.EdytujSz = QtWidgets.QPushButton(parent=self.SzafkiTab)
-        self.EdytujSz.setGeometry(QtCore.QRect(900, 40, 101, 31))
+        self.EdytujSz.setGeometry(QtCore.QRect(1260, 50, 101, 31))
         self.EdytujSz.setObjectName("EdytujSz")
         self.ZwolnijSz = QtWidgets.QPushButton(parent=self.SzafkiTab)
-        self.ZwolnijSz.setGeometry(QtCore.QRect(1000, 40, 101, 31))
+        self.ZwolnijSz.setGeometry(QtCore.QRect(1360, 50, 101, 31))
         self.ZwolnijSz.setObjectName("ZwolnijSz")
         self.MiejsceCB = QtWidgets.QComboBox(parent=self.SzafkiTab)
         self.MiejsceCB.setEnabled(False)
         self.MiejsceCB.setGeometry(QtCore.QRect(10, 40, 161, 31))
         self.MiejsceCB.setObjectName("MiejsceCB")
         self.DodajSz = QtWidgets.QPushButton(parent=self.SzafkiTab)
-        self.DodajSz.setGeometry(QtCore.QRect(700, 40, 101, 31))
+        self.DodajSz.setGeometry(QtCore.QRect(1060, 50, 101, 31))
         self.DodajSz.setObjectName("DodajSz")
         self.label_6 = QtWidgets.QLabel(parent=self.SzafkiTab)
         self.label_6.setGeometry(QtCore.QRect(10, 20, 40, 16))
@@ -80,17 +79,17 @@ class Ui_MainWindow(object):
         self.PracownicyTab = QtWidgets.QWidget()
         self.PracownicyTab.setObjectName("PracownicyTab")
         self.PrzydzielSzPr = QtWidgets.QPushButton(parent=self.PracownicyTab)
-        self.PrzydzielSzPr.setGeometry(QtCore.QRect(850, 40, 121, 31))
+        self.PrzydzielSzPr.setGeometry(QtCore.QRect(1210, 50, 121, 31))
         self.PrzydzielSzPr.setObjectName("PrzydzielSzPr")
         self.TabelaPracownikow = QtWidgets.QTableWidget(parent=self.PracownicyTab)
-        self.TabelaPracownikow.setGeometry(QtCore.QRect(10, 90, 1101, 691))
+        self.TabelaPracownikow.setGeometry(QtCore.QRect(10, 90, 1750, 900))
         self.TabelaPracownikow.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.AllEditTriggers)
         self.TabelaPracownikow.setDragDropOverwriteMode(True)
         self.TabelaPracownikow.setObjectName("TabelaPracownikow")
-        self.TabelaPracownikow.setColumnCount(0)
+        self.TabelaPracownikow.setColumnCount(11)
         self.TabelaPracownikow.setRowCount(0)
         self.UsunPr = QtWidgets.QPushButton(parent=self.PracownicyTab)
-        self.UsunPr.setGeometry(QtCore.QRect(980, 40, 121, 31))
+        self.UsunPr.setGeometry(QtCore.QRect(1340, 50, 121, 31))
         self.UsunPr.setObjectName("UsunPr")
         self.NazwiskoPr = QtWidgets.QLineEdit(parent=self.PracownicyTab)
         self.NazwiskoPr.setGeometry(QtCore.QRect(10, 40, 121, 31))
@@ -280,7 +279,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         Ustawia w TabelaSzafek wiersze z listy lista_szafek.
         """
         self.TabelaSzafek.clear()
-        self.TabelaSzafek.setColumnCount(15)
+        self.TabelaSzafek.setColumnCount(14)
         self.TabelaSzafek.setRowCount(len(lista_szafek))
 
         # Możesz ustawić nagłówki kolumn:
@@ -302,7 +301,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
     def on_dodaj_szafke(self):
         print("on_dodaj_szafke() – klik.")
         dialog = QDialog(self)
-        ui = Ui_DodajSzafki()
+        ui = Ui_DodajSzafki() 
         ui.setupUi(dialog)
 
         ui.StatusSzDS.addItems(["Wolna", "Nieczynna"])
@@ -509,7 +508,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         Dla uproszczenia wyświetlamy 1 wiersz = 1 rekord z tab. 'szafki'.
         """
         self.TabelaPracownikow.clear()
-        self.TabelaPracownikow.setColumnCount(12)
+        self.TabelaPracownikow.setColumnCount(11)
         self.TabelaPracownikow.setRowCount(len(lista_prac))
 
         naglowki = ["Kod prac.", "Nazwisko", "Imię", "Płeć", "Dział",

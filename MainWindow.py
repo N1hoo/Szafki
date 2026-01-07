@@ -9,11 +9,12 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMainWindow, QDialog, QMessageBox
 from PyQt6.QtCore import Qt
-import sqlite3  # <-- Add this import
+import sqlite3
+from datetime import datetime, date
 
-# ---- pliki z logiką/bazą/Excel: ----
+# ---- pliki z logiką/bazą/CSV: ----
 from database import (
-    pobierz_szafki, dodaj_szafke, edytuj_szafke,
+    pobierz_szafki, dodaj_szafke, edytuj_szafke, usun_szafke
 )
 
 # ---- pliki wygenerowane przez pyuic6 ----
@@ -88,7 +89,7 @@ class Ui_MainWindow(object):
         self.TabelaPracownikow.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.AllEditTriggers)
         self.TabelaPracownikow.setDragDropOverwriteMode(True)
         self.TabelaPracownikow.setObjectName("TabelaPracownikow")
-        self.TabelaPracownikow.setColumnCount(11)
+        self.TabelaPracownikow.setColumnCount(10)
         self.TabelaPracownikow.setRowCount(0)
         self.UsunPr = QtWidgets.QPushButton(parent=self.PracownicyTab)
         self.UsunPr.setGeometry(QtCore.QRect(1340, 50, 121, 31))
@@ -187,8 +188,8 @@ class Ui_MainWindow(object):
         self.PrzydzielSzPr.setWhatsThis(_translate("MainWindow", "Przydzielanie szafki do pracownika"))
         self.PrzydzielSzPr.setText(_translate("MainWindow", "Przydziel szafkę"))
         self.TabelaPracownikow.setWhatsThis(_translate("MainWindow", "Tabela szafek"))
-        self.UsunPr.setWhatsThis(_translate("MainWindow", "Usuń pracownika z listy (np. w przypadku zakończenia współpracy)"))
-        self.UsunPr.setText(_translate("MainWindow", "Usuń pracownika"))
+        self.UsunPr.setWhatsThis(_translate("MainWindow", "Zwolnij wszystkie szafki zaznaczonego pracownika (np. w przypadku zakończenia współpracy)"))
+        self.UsunPr.setText(_translate("MainWindow", "Zwolnij wszystkie"))
         self.NazwiskoPr.setWhatsThis(_translate("MainWindow", "Filtruje listę wg nazwiska"))
         self.ImiePr.setWhatsThis(_translate("MainWindow", "Filtruje listę wg imienia"))
         self.PlecPr.setWhatsThis(_translate("MainWindow", "Filtruje listę wg płci"))
@@ -202,13 +203,398 @@ class Ui_MainWindow(object):
         self.StanowiskoPr.setWhatsThis(_translate("MainWindow", "Filtruje listę wg stanowiska"))
         self.SzafkiWidget.setTabText(self.SzafkiWidget.indexOf(self.PracownicyTab), _translate("MainWindow", "Pracownicy"))
 
+class NowiPracownicyDialog(QDialog):
+    def __init__(self, df_new, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Nowi pracownicy (bez szafki)")
+        self.resize(900, 500)
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        count = len(df_new)
+        info = QtWidgets.QLabel(f"Znaleziono: {count} aktywnych pracowników bez przypisanej szafki.")
+        layout.addWidget(info)
+
+        table = QtWidgets.QTableWidget(self)
+        layout.addWidget(table)
+
+        cols = ["Kod", "Nazwisko", "Imię", "Dział", "Stanowisko", "Płeć", "Data_zatrudnienia", "Data_zwolnienia"]
+        table.setColumnCount(len(cols))
+        table.setHorizontalHeaderLabels(cols)
+        table.setRowCount(count)
+
+        for r in range(count):
+            row = df_new.iloc[r]
+            for c, col in enumerate(cols):
+                val = "" if col not in row or row[col] is None else str(row[col])
+                item = QtWidgets.QTableWidgetItem(val)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table.setItem(r, c, item)
+
+        table.resizeColumnsToContents()
+
+        btn_close = QtWidgets.QPushButton("Zamknij")
+        btn_close.clicked.connect(self.accept)
+        layout.addWidget(btn_close)
+
 class OknoGlowne(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setupUi(self)  # inicjalizacja UI z klasy Ui_MainWindow
+        self.setupUi(self)
+
+        self._init_panel_szafek_pracownika()
+
+        self.NowiPracownicyBt = QtWidgets.QPushButton(self.PracownicyTab)
+        self.NowiPracownicyBt.setText("Nowi pracownicy")
+        self.NowiPracownicyBt.setGeometry(QtCore.QRect(1465, 50, 140, 31))
+        self.NowiPracownicyBt.clicked.connect(lambda: self.sprawdz_nowych_pracownikow(pokaz_zawsze=True))
+
+        self._apply_responsive_layouts()
+
         self.inicjuj_signaly()
         self.zaladuj_szafki_do_tabeli()
         self.zaladuj_pracownikow_do_tabeli()
+        self.sprawdz_nowych_pracownikow(pokaz_zawsze=False)
+
+    def _apply_responsive_layouts(self):
+        # --- central widget: TabWidget na cały obszar ---
+        cw = self.centralwidget
+        if cw.layout() is None:
+            lay = QtWidgets.QVBoxLayout(cw)
+            lay.setContentsMargins(0, 0, 0, 0)
+            lay.addWidget(self.SzafkiWidget)
+
+        # --- SZAFKI TAB ---
+        self._layout_szafki_tab()
+
+        # --- PRACOWNICY TAB (z panelem) ---
+        self._layout_pracownicy_tab()
+
+
+    def _layout_szafki_tab(self):
+        tab = self.SzafkiTab
+        root = QtWidgets.QVBoxLayout(tab)
+        root.setContentsMargins(10, 10, 10, 10)
+        root.setSpacing(8)
+
+        top = QtWidgets.QHBoxLayout()
+        top.setSpacing(8)
+
+        top.addWidget(self.groupBox)      # filtry
+        top.addStretch(1)
+
+        btns = QtWidgets.QHBoxLayout()
+        btns.setSpacing(8)
+        btns.addWidget(self.DodajSz)
+        btns.addWidget(self.PrzydzielSz)
+        btns.addWidget(self.EdytujSz)
+        btns.addWidget(self.ZwolnijSz)
+        top.addLayout(btns)
+
+        root.addLayout(top)
+        root.addWidget(self.TabelaSzafek, 1)  # 1 = stretch
+
+    def _layout_pracownicy_tab(self):
+        tab = self.PracownicyTab
+        root = QtWidgets.QVBoxLayout(tab)
+        root.setContentsMargins(10, 10, 10, 10)
+        root.setSpacing(8)
+
+        top = QtWidgets.QHBoxLayout()
+        top.setSpacing(8)
+
+        top.addWidget(self.groupBox_2)    # filtry
+        top.addStretch(1)
+
+        btns = QtWidgets.QHBoxLayout()
+        btns.setSpacing(8)
+        btns.addWidget(self.PrzydzielSzPr)
+        btns.addWidget(self.UsunPr)       # "Zwolnij wszystkie"
+        btns.addWidget(self.NowiPracownicyBt)
+        top.addLayout(btns)
+
+        root.addLayout(top)
+
+        split = QtWidgets.QSplitter(Qt.Orientation.Horizontal, tab)
+        split.addWidget(self.TabelaPracownikow)
+        split.addWidget(self.PanelSzafekPr)  # panel szafek pracownika
+
+        split.setStretchFactor(0, 3)  # lewa część większa
+        split.setStretchFactor(1, 2)
+
+        root.addWidget(split, 1)
+
+    def _init_panel_szafek_pracownika(self):
+        top_y = 90
+        margin = 10
+        panel_h = max(300, self.SzafkiWidget.height() - top_y - margin)
+
+        # Tabela po lewej
+        self.TabelaPracownikow.setGeometry(QtCore.QRect(10, top_y, 1180, panel_h))
+
+        # Panel po prawej
+        self.PanelSzafekPr = QtWidgets.QGroupBox(self.PracownicyTab)
+        self.PanelSzafekPr.setTitle("Szafki pracownika")
+        self.PanelSzafekPr.setGeometry(QtCore.QRect(1200, top_y, 560, panel_h))
+
+        lay = QtWidgets.QVBoxLayout(self.PanelSzafekPr)
+
+        self.LblPracownikInfo = QtWidgets.QLabel("Wybierz pracownika z tabeli po lewej.")
+        self.LblPracownikInfo.setWordWrap(True)
+        lay.addWidget(self.LblPracownikInfo)
+
+        self.TabelaSzafekPr = QtWidgets.QTableWidget(self.PanelSzafekPr)
+        self.TabelaSzafekPr.setColumnCount(4)
+        self.TabelaSzafekPr.setHorizontalHeaderLabels(["Miejsce", "Nr szafki", "Nr zamka", "ID"])
+        self.TabelaSzafekPr.setColumnHidden(3, True)
+        self.TabelaSzafekPr.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.TabelaSzafekPr.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.TabelaSzafekPr.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        lay.addWidget(self.TabelaSzafekPr)
+
+        # --- PRZYCISKI NA DOLE (widoczne) ---
+        btn_row = QtWidgets.QHBoxLayout()
+        self.BtnZwolnijWybranaSz = QtWidgets.QPushButton("Zwolnij zaznaczoną szafkę")
+        self.BtnSkoczDoSzafki = QtWidgets.QPushButton("Pokaż w zakładce Szafki")
+        btn_row.addWidget(self.BtnZwolnijWybranaSz)
+        btn_row.addWidget(self.BtnSkoczDoSzafki)
+        lay.addLayout(btn_row)
+
+        # pewność, że tabela ma stretch, a przyciski mają swoje miejsce
+        lay.setStretch(0, 0)  # label
+        lay.setStretch(1, 1)  # tabela
+        lay.setStretch(2, 0)  # przyciski
+
+        self.BtnZwolnijWybranaSz.clicked.connect(self._zwolnij_szafke_z_panelu)
+        self.BtnSkoczDoSzafki.clicked.connect(self._skocz_do_szafki_w_zakladce)
+
+        self.TabelaPracownikow.itemSelectionChanged.connect(self._odswiez_panel_szafek_pracownika)
+
+    def _selected_employee_code(self) -> str:
+        w = self.TabelaPracownikow.currentRow()
+        if w < 0:
+            return ""
+        item = self.TabelaPracownikow.item(w, 0)
+        return (item.text() if item else "").strip()
+
+
+    def _odswiez_panel_szafek_pracownika(self):
+        kod = self._selected_employee_code()
+        if not kod:
+            self.LblPracownikInfo.setText("Wybierz pracownika z tabeli po lewej.")
+            self.TabelaSzafekPr.setRowCount(0)
+            return
+        # opis pracownika
+        nazw = self.TabelaPracownikow.item(self.TabelaPracownikow.currentRow(), 1).text()
+        im   = self.TabelaPracownikow.item(self.TabelaPracownikow.currentRow(), 2).text()
+
+        szafki = (getattr(self, "_szafki_by_kod", {}) or {}).get(kod, [])
+
+        self.LblPracownikInfo.setText(
+            f"<b>{kod}</b> — {nazw} {im}<br>"
+            f"Przypisane szafki: <b>{len(szafki)}</b>"
+        )
+
+        self.TabelaSzafekPr.setRowCount(len(szafki))
+        for i, s in enumerate(szafki):
+            self.TabelaSzafekPr.setItem(i, 0, QtWidgets.QTableWidgetItem(s.get("miejsce","")))
+            self.TabelaSzafekPr.setItem(i, 1, QtWidgets.QTableWidgetItem(s.get("nr_szafki","")))
+            self.TabelaSzafekPr.setItem(i, 2, QtWidgets.QTableWidgetItem(s.get("nr_zamka","")))
+            self.TabelaSzafekPr.setItem(i, 3, QtWidgets.QTableWidgetItem(str(s.get("id",""))))
+
+        self.TabelaSzafekPr.resizeColumnsToContents()
+
+
+    def _zwolnij_szafke_z_panelu(self):
+        r = self.TabelaSzafekPr.currentRow()
+        if r < 0:
+            QMessageBox.warning(self, "Brak zaznaczenia", "Zaznacz szafkę w panelu po prawej.")
+            return
+        id_item = self.TabelaSzafekPr.item(r, 3)
+        if not id_item or not id_item.text().strip():
+            return
+        id_sz = int(id_item.text().strip())
+
+        potw = QMessageBox.question(
+            self, "Potwierdź",
+            f"Zwolnić szafkę (ID={id_sz}) z tego pracownika?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if potw != QMessageBox.StandardButton.Yes:
+            return
+
+        # znajdź rekord w DB i wyczyść
+        for row in pobierz_szafki():
+            if row and len(row) >= 14 and row[0] == id_sz:
+                edytuj_szafke(
+                    id_szafki=row[0],
+                    miejsce=row[1],
+                    nr_szafki=row[2],
+                    nr_zamka=row[3],
+                    plec_szatni=row[4],
+                    kod_pracownika="",
+                    nazwisko="",
+                    imie="",
+                    dzial="",
+                    stanowisko="",
+                    plec="",
+                    zmiana="",
+                    status="Wolna",
+                    komentarz=(row[13] or "")
+                )
+                break
+
+        self.zaladuj_szafki_do_tabeli()
+        self.zaladuj_pracownikow_do_tabeli()
+        self._odswiez_panel_szafek_pracownika()
+
+
+    def _skocz_do_szafki_w_zakladce(self):
+        r = self.TabelaSzafekPr.currentRow()
+        if r < 0:
+            return
+        id_item = self.TabelaSzafekPr.item(r, 3)
+        if not id_item:
+            return
+        id_sz = id_item.text().strip()
+        if not id_sz:
+            return
+        # przełącz na zakładkę Szafki
+        self.SzafkiWidget.setCurrentIndex(0)
+
+        # znajdź w tabeli szafek wiersz o ID i zaznacz
+        for i in range(self.TabelaSzafek.rowCount()):
+            it = self.TabelaSzafek.item(i, 0)
+            if it and it.text().strip() == id_sz:
+                self.TabelaSzafek.selectRow(i)
+                self.TabelaSzafek.scrollToItem(self.TabelaSzafek.item(i, 1))
+                break
+
+    def _map_szafki_by_kod(self) -> dict[str, list[dict]]:
+        """
+        kod_pracownika -> lista szafek (tylko zajęte; wolne pomijamy)
+        """
+        rows = getattr(self, "_wszystkie_szafki", None) or pobierz_szafki()
+        m: dict[str, list[dict]] = {}
+
+        for r in rows:
+            if not r or len(r) < 14:
+                continue
+
+            kod = str(r[5] or "").strip()
+            status = str(r[12] or "").strip()
+            if not kod:
+                continue
+            if status == "Wolna":
+                continue
+
+            m.setdefault(kod, []).append({
+                "id": r[0],
+                "miejsce": str(r[1] or "").strip(),
+                "nr_szafki": str(r[2] or "").strip(),
+                "nr_zamka": str(r[3] or "").strip(),
+                "plec_szatni": str(r[4] or "").strip(),
+                "status": status,
+                "komentarz": str(r[13] or "").strip(),
+                })
+        return m
+
+    def _parse_pl_date(self, s: str):
+        if s is None:
+            return None
+        s = str(s).strip()
+        if not s:
+            return None
+        try:
+            return datetime.strptime(s, "%d.%m.%Y").date()
+        except ValueError:
+            return None
+
+    def _is_active_employee(self, kod: str) -> bool:
+        kod = (kod or "").strip()
+        if not kod:
+            return False
+        if kod not in DF_PRACOWNICY.index:
+            return False
+        zw = DF_PRACOWNICY.loc[kod].get("Data_zwolnienia", "")
+        zw = "" if zw is None else str(zw).strip()
+
+        # aktywny = brak daty zwolnienia
+        return zw == ""
+    
+    def _assigned_codes_from_db(self) -> set[str]:
+        # użyj już pobranych danych jeśli są
+        rows = getattr(self, "_wszystkie_szafki", None) or pobierz_szafki()
+
+        codes = set()
+        for row in rows:
+            kod = str(row[5] or "").strip()   # kod_pracownika
+            status = str(row[12] or "").strip()  # status
+            if kod and status != "Wolna":
+                codes.add(kod)
+        return codes
+
+    def sprawdz_nowych_pracownikow(self, *, pokaz_zawsze=False):
+        assigned = self._assigned_codes_from_db()
+
+        active_codes = [kod for kod in DF_PRACOWNICY.index if self._is_active_employee(kod)]
+        new_codes = sorted(set(active_codes) - assigned)
+    
+        if not new_codes:
+            if pokaz_zawsze:
+                QMessageBox.information(self, "Nowi pracownicy", "Nie znaleziono nowych aktywnych pracowników bez szafki.")
+            return
+
+        df_new = DF_PRACOWNICY.loc[new_codes].reset_index()  # index=Kod -> kolumna "Kod"
+        dlg = NowiPracownicyDialog(df_new, parent=self)
+        dlg.exec()
+
+    def _zwolnij_wszystkie_szafki_pracownika(self):
+        kod = self._selected_employee_code()
+        if not kod:
+            QMessageBox.warning(self, "Brak pracownika", "Wybierz pracownika z tabeli po lewej.")
+            return
+
+        szafki = (getattr(self, "_szafki_by_kod", {}) or {}).get(kod, [])
+        if not szafki:
+            QMessageBox.information(self, "Brak szafek", "Ten pracownik nie ma przypisanych szafek.")
+            return
+
+        potw = QMessageBox.question(
+            self,
+            "Potwierdź",
+            f"Zwolnić WSZYSTKIE szafki pracownika {kod}? (liczba: {len(szafki)})",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if potw != QMessageBox.StandardButton.Yes:
+            return
+
+        ids = {int(s["id"]) for s in szafki if str(s.get("id", "")).strip().isdigit()}
+
+        for row in pobierz_szafki():
+            if not row or len(row) < 14:
+                continue
+            if row[0] in ids:
+                edytuj_szafke(
+                    id_szafki=row[0],
+                    miejsce=row[1],
+                    nr_szafki=row[2],
+                    nr_zamka=row[3],
+                    plec_szatni=row[4],
+                    kod_pracownika="",
+                    nazwisko="",
+                    imie="",
+                    dzial="",
+                    stanowisko="",
+                    plec="",
+                    zmiana="",
+                    status="Wolna",
+                    komentarz=(row[13] or "")
+                )
+
+        self.zaladuj_szafki_do_tabeli()
+        self.zaladuj_pracownikow_do_tabeli()
+        self._odswiez_panel_szafek_pracownika()
 
     def inicjuj_signaly(self):
         print("inicjuj_signaly() – podpinam przyciski i filtry.")
@@ -223,7 +609,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
 
         # Zakładka "Pracownicy"
         self.PrzydzielSzPr.clicked.connect(self.on_przydziel_szafke_pracownikowi)
-        self.UsunPr.clicked.connect(self.on_usun_pracownika)
+        self.UsunPr.clicked.connect(self._zwolnij_wszystkie_szafki_pracownika)
         self.NazwiskoPr.textChanged.connect(self.filtruj_tabele_pracownikow)
         self.ImiePr.textChanged.connect(self.filtruj_tabele_pracownikow)
         self.PlecPr.textChanged.connect(self.filtruj_tabele_pracownikow)
@@ -233,7 +619,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
     # -------------- OBSŁUGA TABELI "SZAFKI" --------------
     def zaladuj_szafki_do_tabeli(self):
         print("zaladuj_szafki_do_tabeli()")
-        self._wszystkie_szafki = pobierz_szafki()  # list of rows
+        self._wszystkie_szafki = pobierz_szafki()
 
         # --- UZUPEŁNIANIE COMBOBOXA "Miejsce" ---
         miejsca = sorted(set(row[1] for row in self._wszystkie_szafki if row[1]))
@@ -266,7 +652,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         lista_filtrowana = []
         for row in self._wszystkie_szafki:
             (id_sz, miejsce, nr_sz, nr_zamka, plec_szat, kod_prac, nazw, imie, dzial, stan, plec, zm, status, komentarz) = row
-
             # Filtr Miejsce
             if miejsce_filtr and miejsce_filtr != miejsce:
                 continue
@@ -290,7 +675,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         Ustawia w TabelaSzafek wiersze z listy lista_szafek.
         """
         self.TabelaSzafek.clear()
-        self.TabelaSzafek.setColumnCount(14)  # 13 + 1 na ID
+        self.TabelaSzafek.setColumnCount(14)
         self.TabelaSzafek.setRowCount(len(lista_szafek))
 
         naglowki = [
@@ -374,11 +759,11 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
             QMessageBox.warning(self, "Brak zaznaczenia", "Zaznacz szafkę do edycji!")
             return
 
-        # Pobieramy ID z kolumny 0
+        # ID z kolumny 0
         id_szafki = int(self.TabelaSzafek.item(wiersz, 0).text())
 
         # Odczyt aktualnych wartości (dla uproszczenia - odczyt z TabelaSzafek)
-        aktualne = [self.TabelaSzafek.item(wiersz, col).text() for col in range(13)]
+        aktualne = [self.TabelaSzafek.item(wiersz, col).text() for col in range(14)]
         # Rozbijmy je:
         (_id, miejsce, nr_s, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, stat, kom) = aktualne
 
@@ -448,15 +833,15 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
 
         id_szafki = int(self.TabelaSzafek.item(wiersz, 0).text())
         # Odczytujemy resztę:
-        aktualne = [self.TabelaSzafek.item(wiersz, col).text() for col in range(13)]
+        aktualne = [self.TabelaSzafek.item(wiersz, col).text() for col in range(14)]
         (_id, miejsce, nr_s, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, stat, kom) = aktualne
 
         # Ustawiamy status="Wolna", czyścimy dane
         edytuj_szafke(
             id_szafki=id_szafki,
             miejsce=miejsce,
-            nr_szafki=int(nr_s) if nr_s else None,
-            nr_zamka=int(nr_z) if nr_z else None,
+            nr_szafki=nr_s,
+            nr_zamka=nr_z,
             plec_szatni=plec_sz,
             kod_pracownika="",
             nazwisko="",
@@ -469,6 +854,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
             komentarz=kom
         )
         self.zaladuj_szafki_do_tabeli()
+        
     def ustaw_dozwolone_szatnie(ui):
         plec_prac = ui.PlecDP.currentText().strip().lower()
         if plec_prac == "kobieta":
@@ -489,7 +875,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
             QMessageBox.warning(self, "Brak zaznaczenia", "Zaznacz szafkę.")
             return
 
-        # ... tworzymy dialog QDialog z Ui_Dialog
+        # --- dialog QDialog z Ui_Dialog
         dialog = QDialog(self)
         ui = Ui_Dialog()
         ui.setupUi(dialog)
@@ -521,7 +907,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
         """
         Losuje wolną szafkę zgodnie z płcią pracownika lub neutralną.
         """
-        # Pobierz dane pracownika z dialogu lub tabeli (przykład dla dialogu)
+        # Pobierz dane pracownika z dialogu lub tabeli
         plec_prac = None
         if hasattr(self, 'dialog_pracownika') and self.dialog_pracownika is not None:
             plec_prac = self.dialog_pracownika.ui.PlecDP.currentText()
@@ -555,211 +941,131 @@ class OknoGlowne(QMainWindow, Ui_MainWindow):
                 break
 
         QMessageBox.information(self, "Wylosowano szafkę", f"Wylosowano szafkę nr {szafka[2]} ({szafka[1]})")
+    
+    def on_usun_szafke(self):
+        wiersz = self.TabelaSzafek.currentRow()
+        if wiersz < 0:
+            QMessageBox.warning(self, "Brak zaznaczenia", "Zaznacz szafkę do usunięcia!")
+            return
 
-    # Podłącz do przycisku losowania, np. w inicjuj_signaly:
-    # self.LosujSz.clicked.connect(self.on_losuj_wolna_szafke)
-    def usun_szafke(id):
-        conn = sqlite3.connect('szafki.db')  # Use your actual database file here
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM szafki WHERE ID=?", (id,))
-        conn.commit()
-        conn.close()
-        conn.close()
+        id_szafki = int(self.TabelaSzafek.item(wiersz, 0).text())
+        potw = QMessageBox.question(
+            self,
+            "Potwierdź",
+            f"Czy na pewno usunąć szafkę (ID={id_szafki})?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+
+        if potw != QMessageBox.StandardButton.Yes:
+            return
+
+        usun_szafke(id_szafki)
+        self.zaladuj_szafki_do_tabeli()
 
     # --------------------------------------------------#
     #                OBSŁUGA TABELI "PRACOWNICY"        #
     # --------------------------------------------------#
+
     def zaladuj_pracownikow_do_tabeli(self):
         print("zaladuj_pracownikow_do_tabeli()")
-        self._wszyscy_pracownicy = pobierz_szafki()
+        # snapshot mapy z DB (żeby nie liczyć w kółko w pętli)
+        self._szafki_by_kod = self._map_szafki_by_kod()
         self.filtruj_tabele_pracownikow()
+        self._odswiez_panel_szafek_pracownika()
 
     def filtruj_tabele_pracownikow(self):
-        """
-        Filtr na podstawie (NazwiskoPr, ImiePr, PlecPr, DzialPr, StanowiskoPr).
-        W realnej aplikacji pewnie trzeba lepiej zorganizować (bo kod jest w tej samej tabeli).
-        """
-        if not hasattr(self, '_wszyscy_pracownicy'):
-            return
         nazwisko_f = self.NazwiskoPr.text().strip().lower()
-        imie_f = self.ImiePr.text().strip().lower()
-        plec_f = self.PlecPr.text().strip().lower()
-        dzial_f = self.DzialPr.text().strip().lower()
-        stan_f = self.StanowiskoPr.text().strip().lower()
+        imie_f     = self.ImiePr.text().strip().lower()
+        plec_f     = self.PlecPr.text().strip().lower()
+        dzial_f    = self.DzialPr.text().strip().lower()
+        stan_f     = self.StanowiskoPr.text().strip().lower()
+
+        df = DF_PRACOWNICY.copy()
+        df = df.reset_index()  # index=Kod -> kolumna "Kod"
+
+        def s(x): return "" if x is None else str(x)
 
         lista = []
-        for row in self._wszyscy_pracownicy:
-            (id_sz, miejsce, nr_sz, nr_zamka, plec_szat, kod_prac, nazw, im, dz, stan, plec, zm, status, kom) = row
+        for _, r in df.iterrows():
+            kod  = s(r.get("Kod")).strip()
+            nazw = s(r.get("Nazwisko")).strip()
+            im   = s(r.get("Imię")).strip()
+            dz   = s(r.get("Dział")).strip()
+            stan = s(r.get("Stanowisko")).strip()
+            plec = s(r.get("Płeć")).strip()
+            dzatr = s(r.get("Data_zatrudnienia")).strip()
+            dzw   = s(r.get("Data_zwolnienia")).strip()
 
-            # Jeżeli brak kodu pracownika, to ignorujemy (bo to 'pusta' szafka)
-            if not kod_prac:
-                continue
+            if nazwisko_f and nazwisko_f not in nazw.lower(): continue
+            if imie_f and imie_f not in im.lower():           continue
+            if plec_f and plec_f not in plec.lower():         continue
+            if dzial_f and dzial_f not in dz.lower():         continue
+            if stan_f and stan_f not in stan.lower():         continue
 
-            # Filtr:
-            if nazwisko_f and nazwisko_f not in nazw.lower():
-                continue
-            if imie_f and imie_f not in im.lower():
-                continue
-            if plec_f and plec_f not in plec.lower():
-                continue
-            if dzial_f and dzial_f not in dz.lower():
-                continue
-            if stan_f and stan_f not in stan.lower():
-                continue
-
-            lista.append(row)
+            sz_list = (getattr(self, "_szafki_by_kod", {}) or {}).get(kod, [])
+            lista.append({
+                "Kod": kod,
+                "Nazwisko": nazw,
+                "Imię": im,
+                "Płeć": plec,
+                "Dział": dz,
+                "Stanowisko": stan,
+                "Data_zatrudnienia": dzatr,
+                "Data_zwolnienia": dzw,
+                "Szafki_count": len(sz_list),
+            })
 
         self._wyswietl_pracownikow_w_tabeli(lista)
 
-    def _wyswietl_pracownikow_w_tabeli(self, lista_prac):
-        """
-        Ustawia TabelaPracownikow w sposób: 
-        [Kod pracownika, Nazwisko, Imię, Płeć, Dział, Stanowisko, Miejsce szafki, Nr szafki, Nr zamka, Status szafki, ...]
-        Dla uproszczenia wyświetlamy 1 wiersz = 1 rekord z tab. 'szafki'.
-        """
-        self.TabelaPracownikow.clear()
-        self.TabelaPracownikow.setColumnCount(11)
+    def _wyswietl_pracownikow_w_tabeli(self, lista_prac: list[dict]):
+        naglowki = [
+            "Kod","Nazwisko","Imię","Płeć","Dział","Stanowisko",
+            "Data zatr.","Data zwol.","Szafki"
+        ]
+
+        self.TabelaPracownikow.clearContents()
+        self.TabelaPracownikow.setColumnCount(len(naglowki))
+        self.TabelaPracownikow.setHorizontalHeaderLabels(naglowki)
         self.TabelaPracownikow.setRowCount(len(lista_prac))
 
-        naglowki = ["Kod prac.", "Nazwisko", "Imię", "Płeć", "Dział", "Stanowisko", "Miejsce szafki", "Nr szafki", "Nr zamka", "Status"]
-        self.TabelaPracownikow.setHorizontalHeaderLabels(naglowki)
-
-        for i, row in enumerate(lista_prac):
-            (miejsce, nr_sz, nr_z, plec_sz, kod_prac, nazw, im, dz, stan, plec, zm, status, kom, *reszta) = row
-
+        for i, r in enumerate(lista_prac):
             wartosci = [
-                kod_prac, nazw, im, plec, dz, stan, miejsce, nr_sz, nr_z, status
+                r.get("Kod",""), r.get("Nazwisko",""), r.get("Imię",""), r.get("Płeć",""),
+                r.get("Dział",""), r.get("Stanowisko",""),
+                r.get("Data_zatrudnienia",""), r.get("Data_zwolnienia",""),
+                str(r.get("Szafki_count", 0)),
             ]
             for j, val in enumerate(wartosci):
-                item = QtWidgets.QTableWidgetItem(str(val) if val is not None else "")
+                item = QtWidgets.QTableWidgetItem(str(val))
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.TabelaPracownikow.setItem(i, j, item)
 
         self.TabelaPracownikow.resizeColumnsToContents()
 
     def on_przydziel_szafke_pracownikowi(self):
-        """
-        Kliknięcie w zakładce 'Pracownicy': 'Przydziel szafkę'.
-        Otwiera okno 'DodajPracownika'. 
-        Jeśli w TabelaPracownikow jest zaznaczony wiersz, wczytuje dane; 
-        w przeciwnym razie pola zostają puste.
-        """
-        # Tworzymy okno QDialog na bazie klasy wygenerowanej z pliku .ui
         print("on_przydziel_szafke_pracownikowi() – klik")
+
         dialog = QDialog(self)
         ui = Ui_Dialog()
         ui.setupUi(dialog)
 
-        # --- WYPEŁNIANIE COMBOBOXÓW UNIKALNYMI WARTOŚCIAMI Z CSV ---
-        from pracownicy import DF_PRACOWNICY
-
-        # Dział
-        dzialy = sorted(set(DF_PRACOWNICY['Dział'].dropna()))
+        # comboboxy z CSV
         ui.DzialDP.clear()
-        ui.DzialDP.addItems(dzialy)
+        ui.DzialDP.addItems(sorted(set(DF_PRACOWNICY["Dział"].dropna())))
 
-        # Stanowisko
-        stanowiska = sorted(set(DF_PRACOWNICY['Stanowisko'].dropna()))
         ui.StanowiskoDP.clear()
-        ui.StanowiskoDP.addItems(stanowiska)
+        ui.StanowiskoDP.addItems(sorted(set(DF_PRACOWNICY["Stanowisko"].dropna())))
 
-        # Płeć
-        plcie = sorted(set(DF_PRACOWNICY['Płeć'].dropna()))
         ui.PlecDP.clear()
-        ui.PlecDP.addItems(plcie)
-
-        # --- Obsługa automatycznego uzupełniania po wpisaniu kodu ---
+        ui.PlecDP.addItems(sorted(set(DF_PRACOWNICY["Płeć"].dropna())))
         ui.KodPracDP.textChanged.connect(lambda _: self.on_kod_changed(ui))
-
-        wynik = dialog.exec()
-        if wynik == QDialog.DialogCode.Accepted:
-            self.zaladuj_pracownikow_do_tabeli()
         
-        # Sprawdzamy, czy któryś wiersz jest zaznaczony
+        # jeśli zaznaczony wiersz -> wypełnij dialog
         wiersz = self.TabelaPracownikow.currentRow()
-        if wiersz >= 0: 
-            # Jeśli tak – odczytujemy dane z kolumn i uzupełniamy pola w dialogu
-            kod_prac = self.TabelaPracownikow.item(wiersz, 0).text()
-            nazw = self.TabelaPracownikow.item(wiersz, 1).text()
-            im = self.TabelaPracownikow.item(wiersz, 2).text()
-            plec = self.TabelaPracownikow.item(wiersz, 3).text()
-            dzial = self.TabelaPracownikow.item(wiersz, 4).text()
-            stanowisko = self.TabelaPracownikow.item(wiersz, 5).text()
-
+        if wiersz >= 0:
+            kod_prac = self.TabelaPracownikow.item(wiersz, 0).text().strip()
             ui.KodPracDP.setText(kod_prac)
-            ui.NazwiskoDP.setText(nazw)
-            ui.ImieDP.setText(im)
-            ui.PlecDP.addItems(["Kobieta", "Mężczyzna"])
-            ui.DzialDP.addItems(dzial)
-            ui.StanowiskoDP.addItems(stanowisko)
 
-        else:
-            # Jeśli nic nie jest zaznaczone:
-            # Nie robimy nic – pola zostają puste (ewentualnie możesz je sam wyczyścić).
-            pass
-
-        # Wyświetlamy dialog (blokująco); user klika Anuluj lub Zapisz/Dodaj
-        wynik = dialog.exec()
-
-        # Jeśli użytkownik zatwierdził (QDialog.Accepted), odświeżamy listę pracowników
-        if wynik == QDialog.Accepted:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.zaladuj_szafki_do_tabeli()
             self.zaladuj_pracownikow_do_tabeli()
-
-    def on_kod_changed(self, ui):
-        kod = ui.KodPracDP.text().strip()
-        if len(kod) != 6:
-            return
-
-        from pracownicy import DF_PRACOWNICY
-        if kod in DF_PRACOWNICY.index:
-            dane = DF_PRACOWNICY.loc[kod]
-            ui.ImieDP.setText(dane['Imię'])
-            ui.NazwiskoDP.setText(dane['Nazwisko'])
-            # Poprawka dla QComboBox:
-            ui.StanowiskoDP.setCurrentText(dane['Stanowisko'])
-            ui.DzialDP.setCurrentText(dane['Dział'])
-            ui.PlecDP.setCurrentText(dane['Płeć'])
-        else:
-            ui.ImieDP.clear()
-            ui.NazwiskoDP.clear()
-            # Poprawka dla QComboBox:
-            ui.StanowiskoDP.setCurrentIndex(-1)
-            ui.DzialDP.clear()
-            ui.PlecDP.setCurrentIndex(-1)
-
-    def on_usun_pracownika(self):
-        """
-        Usuwa pracownika z bazy 'szafki' – tzn. czyści Kod_pracownika + dane w WSZYSTKICH jego szafkach.
-        """
-        wiersz = self.TabelaPracownikow.currentRow()
-        if wiersz < 0:
-            QMessageBox.warning(self, "Brak zaznaczenia", "Zaznacz pracownika do usunięcia!")
-            return
-
-        kod_prac = self.TabelaPracownikow.item(wiersz, 0).text()
-        # Najprostsze podejście: pobieramy wszystkie szafki z tym kodem i czyścimy
-        for row in self._wszyscy_pracownicy:
-            (id_sz, miejsce, nr_sz, nr_z, plec_sz, kodp, nazw, im, dz, stan, pl, zm, status, kom) = row
-            if kodp == kod_prac:
-                # Ustawiamy status na "Wolna"
-                edytuj_szafke(
-                    id_szafki=id_sz,
-                    miejsce=miejsce,
-                    nr_szafki=nr_sz,
-                    nr_zamka=nr_z,
-                    plec_szatni=plec_sz,
-                    kod_pracownika="",
-                    nazwisko="",
-                    imie="",
-                    dzial="",
-                    stanowisko="",
-                    plec="",
-                    zmiana="",
-                    status="Wolna",
-                    komentarz=kom,
-                    data_zatrudnienia="",
-                    data_zwolnienia=""
-                )
-
-        self.zaladuj_szafki_do_tabeli()
-        self.zaladuj_pracownikow_do_tabeli()

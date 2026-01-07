@@ -12,44 +12,73 @@ def inicjuj_baze():
         CREATE TABLE IF NOT EXISTS szafki (
             ID INTEGER PRIMARY KEY AUTOINCREMENT,
             Miejsce TEXT,
-            Nr_szafki INTEGER,
-            Nr_zamka INTEGER,
-            Plec_szatni TEXT,
+            Nr_szafki TEXT,
+            Nr_zamka TEXT,
+            "Płeć_szatni" TEXT,
             Kod_pracownika TEXT,
             Nazwisko TEXT,
-            Imię TEXT,
-            Dział TEXT,
+            "Imię" TEXT,
+            "Dział" TEXT,
             Stanowisko TEXT,
-            Płeć TEXT,
+            "Płeć" TEXT,
             Zmiana TEXT,
             Status TEXT,
-            Komentarz TEXT,
-            Data_zatrudnienia TEXT,
-            Data_zwolnienia TEXT
+            Komentarz TEXT
         )
     """)
     conn.commit()
     conn.close()
 
-def dodaj_szafke(miejsce, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz, data_zatrudnienia, data_zwolnienia):
+def dodaj_szafke(
+    miejsce, nr_szafki, nr_zamka, plec_szatni,
+    kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana,
+    status, komentarz
+):
     conn = connect()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO szafki VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (miejsce, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz, data_zatrudnienia, data_zwolnienia))
+        INSERT INTO szafki (
+            Miejsce, Nr_szafki, Nr_zamka, "Płeć_szatni",
+            Kod_pracownika, Nazwisko, "Imię", "Dział", Stanowisko, "Płeć", Zmiana,
+            Status, Komentarz
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        miejsce, nr_szafki, nr_zamka, plec_szatni,
+        kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana,
+        status, komentarz
+    ))
     conn.commit()
     conn.close()
 
-def edytuj_szafke(id_szafki, miejsce, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz, data_zatrudnienia, data_zwolnienia):
+def edytuj_szafke(
+    id_szafki, miejsce, nr_szafki, nr_zamka, plec_szatni,
+    kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana,
+    status, komentarz
+):
     conn = connect()
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE szafki SET
-        Miejsce=?, Nr_szafki=?, Nr_zamka=?, Plec_szatni=?, Kod_pracownika=?,
-        Nazwisko=?, Imię=?, Dział=?, Stanowisko=?, Płeć=?, Zmiana=?,
-        Status=?, Komentarz=?, Data_zatrudnienia=?, Data_zwolnienia=?
+            Miejsce=?,
+            Nr_szafki=?,
+            Nr_zamka=?,
+            "Płeć_szatni"=?,
+            Kod_pracownika=?,
+            Nazwisko=?,
+            "Imię"=?,
+            "Dział"=?,
+            Stanowisko=?,
+            "Płeć"=?,
+            Zmiana=?,
+            Status=?,
+            Komentarz=?
         WHERE ID=?
-    """, (miejsce, nr_szafki, nr_zamka, plec_szatni, kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana, status, komentarz, data_zatrudnienia, data_zwolnienia, id_szafki))
+    """, (
+        miejsce, nr_szafki, nr_zamka, plec_szatni,
+        kod_pracownika, nazwisko, imie, dzial, stanowisko, plec, zmiana,
+        status, komentarz,
+        id_szafki
+    ))
     conn.commit()
     conn.close()
 

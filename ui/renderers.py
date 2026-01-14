@@ -23,7 +23,6 @@ def parse_date(s: str):
             return datetime.strptime(s, fmt).date()
         except Exception:
             pass
-    # last resort: try pandas if available
     try:
         import pandas as pd
         dt = pd.to_datetime(s, dayfirst=True, errors='coerce')
@@ -139,7 +138,7 @@ def render_lockers_table(table: QtWidgets.QTableWidget, rows: list[tuple], *, fi
                 item = QtWidgets.QTableWidgetItem("" if val is None else str(val))
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 
-                # Color dismissed employees in red and bold
+                # Kolorowanie zwolnionych
                 if is_dismissed:
                     from PyQt6 import QtGui
                     font = item.font()
@@ -162,7 +161,7 @@ def render_lockers_table(table: QtWidgets.QTableWidget, rows: list[tuple], *, fi
                         header = table.horizontalHeader()
                         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
                         table.resizeColumnsToContents()
-                        # capture widths and lock them as fixed so they don't auto-resize later
+                        # Zapisz szerokości i zablokuj je jako stałe, aby nie zmieniały się automatycznie później
                         widths = [table.columnWidth(i) for i in range(table.columnCount())]
                         for idx, w in enumerate(widths):
                             # Tryb interaktywny po autosizing
@@ -190,7 +189,6 @@ def render_lockers_table(table: QtWidgets.QTableWidget, rows: list[tuple], *, fi
         return
 
     # --- Fallback: pojedyncza tabela (legacy) ---
-    # Keep header/column setup; don't call table.clear() because it removes cell widgets
     table.setRowCount(len(rows) + 1)
 
     existing_filter = True
@@ -332,7 +330,7 @@ def render_employees_table(table: QtWidgets.QTableWidget, employees: list[dict],
             
             for j, val in enumerate(values):
                 text = "" if val is None else str(val)
-                # Use SortableItem with date ordinal for date columns (6, 7) and numeric for count (8)
+                # Użycie SortableItem dla kolumn dat i liczby szafek
                 if j in (6, 7):
                     pd = parse_date(text)
                     item = SortableItem(text, pd.toordinal() if pd else None)

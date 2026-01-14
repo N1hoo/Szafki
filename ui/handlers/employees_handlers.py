@@ -100,9 +100,8 @@ class EmployeesHandlersMixin:
             else:
                 status = "Obecny"
 
-        # Try to update a nearby status label if one exists
+        # Aktualizacja labela statusu
         try:
-            # Look for a QLabel named StatusLabel inside the dialog's top-level layout
             parent = ui.parent() if hasattr(ui, 'parent') else None
             if parent is not None:
                 for child in parent.findChildren(type(__import__('builtins').object)):
@@ -110,14 +109,14 @@ class EmployeesHandlersMixin:
         except Exception:
             pass
 
-        # Best-effort: if a simple attribute 'StatusLabel' exists, set it
+        # Beśli jest StatusLabel w ui, ustaw jego tekst
         try:
             if hasattr(ui, 'StatusLabel'):
                 ui.StatusLabel.setText(f"Status: {status}")
         except Exception:
             pass
 
-        # As a fallback, try to set any QLabel named like 'status_lbl' in parent
+        # Jako ostateczność, spróbuj ustawić dowolny QLabel o nazwie 'status_lbl' w rodzicu
         try:
             parent = ui.parent()
             if parent is not None:

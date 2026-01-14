@@ -39,7 +39,7 @@ class HistoryPanel(QWidget):
         except Exception:
             events = []
         self.table.setRowCount(len(events))
-        self._events_cache = events  # cache for undo lookup
+        self._events_cache = events  # cache dla undo
         for i, e in enumerate(events):
             # Dane przed/po dla szczegółów
             before = e.get('before', {}) or {}

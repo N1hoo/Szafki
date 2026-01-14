@@ -18,14 +18,14 @@ class Ui_DodajSzafki(object):
         main_layout.setContentsMargins(10, 10, 10, 10)
         main_layout.setSpacing(10)
         
-        # Scroll area for inputs
+        # Skrollowalny obszar z wejściami
         scroll_area = QtWidgets.QScrollArea(DodajSzafki)
         scroll_area.setWidgetResizable(True)
         scroll_widget = QtWidgets.QWidget()
         inputs_layout = QtWidgets.QVBoxLayout(scroll_widget)
         inputs_layout.setSpacing(10)
         
-        # First row - Miejsce, Nr szafki, Kod zamka, Płeć, Status
+        # Pierwszy wiersz - Miejsce, Nr szafki, Kod zamka, Płeć, Status
         row1_layout = QtWidgets.QHBoxLayout()
         row1_layout.setSpacing(10)
         
@@ -103,7 +103,7 @@ class Ui_DodajSzafki(object):
         row1_layout.addStretch()
         inputs_layout.addLayout(row1_layout)
         
-        # Second row - Kod właściciela, Uwagi
+        # Drugi wiersz - Kod właściciela, Uwagi
         row2_layout = QtWidgets.QHBoxLayout()
         row2_layout.setSpacing(10)
         
@@ -137,7 +137,7 @@ class Ui_DodajSzafki(object):
         scroll_area.setWidget(scroll_widget)
         main_layout.addWidget(scroll_area, 1)
         
-        # Second row - buttons
+        # Drugi wiersz - przyciski
         buttons_layout = QtWidgets.QHBoxLayout()
         buttons_layout.setSpacing(10)
         buttons_layout.addStretch()
@@ -157,8 +157,8 @@ class Ui_DodajSzafki(object):
         main_layout.addLayout(buttons_layout)
 
         self.retranslateUi(DodajSzafki)
-        self.buttonBox.accepted.connect(DodajSzafki.accept) # type: ignore
-        self.buttonBox.rejected.connect(DodajSzafki.reject) # type: ignore
+        self.buttonBox.accepted.connect(DodajSzafki.accept) # typ: ignore
+        self.buttonBox.rejected.connect(DodajSzafki.reject) # typ: ignore
         QtCore.QMetaObject.connectSlotsByName(DodajSzafki)
 
     def retranslateUi(self, DodajSzafki):

@@ -136,7 +136,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         self.BtnSkoczDoSzafki.clicked.connect(self._skocz_do_szafki_w_zakladce)
 
     def _apply_responsive_layouts(self):
-        # Centralny widget: TabWidget na całą przestrzeń
+        # Centralny widget: TabWidget na całą przestrzeń "To ja i moja przestrzeń"
         cw = self.centralwidget
         if cw.layout() is None:
             lay = QtWidgets.QVBoxLayout(cw)
@@ -237,7 +237,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
 
         btns = QtWidgets.QHBoxLayout()
         btns.setSpacing(8)
-        # checkbox to show only employed employees (default checked)
+        # checkbox tylko zatrudnieni
         self.OnlyActiveCh = QtWidgets.QCheckBox("Zatrudnieni")
         self.OnlyActiveCh.setChecked(True)
         self.OnlyActiveCh.setToolTip("Pokaż tylko aktualnie zatrudnionych pracowników")
@@ -339,13 +339,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         # Pracownicy
         self.PrzydzielSzPr.clicked.connect(self.on_przydziel_szafke_pracownikowi)
         self.UsunPr.clicked.connect(self._zwolnij_wszystkie_szafki_pracownika)
-
-        # Legacy employee text filters are hidden and no longer connected; we'll use the table-top filter row
-        # self.NazwiskoPr.textChanged.connect(self.filtruj_tabele_pracownikow)  # removed
-        # self.ImiePr.textChanged.connect(self.filtruj_tabele_pracownikow)  # removed
-        # self.PlecPr.textChanged.connect(self.filtruj_tabele_pracownikow)  # removed
-        # self.DzialPr.textChanged.connect(self.filtruj_tabele_pracownikow)  # removed
-        # self.StanowiskoPr.textChanged.connect(self.filtruj_tabele_pracownikow)  # removed
 
         self.TabelaPracownikow.itemSelectionChanged.connect(self._odswiez_panel_szafek_pracownika)
 
@@ -509,7 +502,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         dlg = ChangePasswordDialog(u['login'], self, require_old=True)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             QMessageBox.information(self, "Sukces", "Hasło zmienione.")
-            # Update status in case flags changed
+            # Aktualizacja statusu użytkownika
             self._update_user_status()
 
     def _update_user_status(self):
@@ -525,20 +518,20 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         if potw != QMessageBox.StandardButton.Yes:
             return
         clear_current_user()
-        # Close current main window immediately
+        # Zamknij bieżące główne okno
         self.close()
 
-        # Prompt for re-login; if cancelled, exit app
+        # Prompt logowania
         dlg = LoginDialog(self)
         if dlg.exec() != QDialog.DialogCode.Accepted:
             import sys
             sys.exit(0)
             return
 
-        # Re-login succeeded: open a fresh main window for the new session
+        # Po pomyślnym ponownym logowaniu: otwórz nowe główne okno dla nowej sesji
         new_win = OknoGlowne()
         new_win.show()
-        # Nothing else to do; caller will continue with a new window
+        # Nic więcej do zrobienia; wywołujący będzie kontynuował z nowym oknem
 
     def _ensure_admin_tabs(self):
         if self._admin_tabs_created:
@@ -546,7 +539,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         u = get_current_user()
         if not u or u.get('role') != 'admin':
             return
-        # Create an 'Administracja' tab with 'Użytkownicy' and 'Historia' pages
+        # Utwórz zakładkę 'Administracja' z podzakładkami 'Użytkownicy' i 'Historia'
         admin_tab = QtWidgets.QWidget()
         admin_layout = QtWidgets.QVBoxLayout(admin_tab)
         users_panel = UsersPanel(admin_tab)
@@ -649,8 +642,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         if hasattr(ui, "StanowiskoDP"): ui.StanowiskoDP.setText(str(p.get("Stanowisko","")))
         if hasattr(ui, "ZmianaDP"): ui.ZmianaDP.setText(str(p.get("Zmiana","")))
         if hasattr(ui, "MiejsceDP"): 
-            # MiejsceDP (locker location) is usually filled from elsewhere or should be searched
-            # For now, leave it empty or implement lookup if needed
             ui.MiejsceDP.setText("")
         
     def filtruj_tabele_pracownikow(self):
@@ -751,7 +742,6 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
                     if ev.get('performed_by') == u.get('login'):
                         ts = ev.get('ts')
                         try:
-                            # parse ISO timestamp (strip trailing Z if present)
                             last_dt = datetime.fromisoformat(ts.replace('Z', ''))
                         except Exception:
                             try:
@@ -802,7 +792,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
 
     def on_przydziel_szafke(self):
         try:
-            # Assign from Szafki tab: open a dialog to choose an employee for the selected locker.
+            # Przydzielanie szafki wybranej w tabeli
             row = self.TabelaSzafek.currentRow()
             if row < 0:
                 QMessageBox.warning(self, "Brak zaznaczenia", "Zaznacz szafkę.")
@@ -983,13 +973,13 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
     
     def _context_release_locker(self, locker_id):
         """Zwolnienie szafki z menu kontekstowego"""
-        self.TabelaSzafek.selectRow(0)  # Reset selection to avoid issues
+        self.TabelaSzafek.selectRow(0)  # Resetuj zaznaczenie, aby uniknąć problemów z UI
         self.lockers.release_locker_by_id(locker_id, rows=self._wszystkie_szafki)
         self.reload_all()
     
     def _context_assign_locker(self, locker_id):
         """Przydzielenie szafki z menu kontekstowego"""
-        # Select the row and call assignment handler
+        # Zaznacz wiersz i wywołaj handler przydziału
         for i in range(self.TabelaSzafek.rowCount()):
             item = self.TabelaSzafek.item(i, 0)
             if item and item.text().strip() == str(locker_id):
@@ -999,7 +989,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
     
     def _context_edit_locker(self, locker_id):
         """Edycja szafki z menu kontekstowego"""
-        # Select the row and call edit handler
+        # Zaznacz wiersz i wywołaj handler edycji
         for i in range(self.TabelaSzafek.rowCount()):
             item = self.TabelaSzafek.item(i, 0)
             if item and item.text().strip() == str(locker_id):
@@ -1087,7 +1077,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
         import csv
         from PyQt6.QtWidgets import QFileDialog
         
-        # Determine which table to export based on current tab
+        # Określ, którą tabelę eksportować na podstawie aktywnej zakładki
         current_tab_index = self.SzafkiWidget.currentIndex()
         if current_tab_index == 1:  # Pracownicy tab
             table = self.TabelaPracownikow
@@ -1155,7 +1145,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
             export_type = "pracowników"
             sheet_title = "Pracownicy"
             default_name = "pracownicy.xlsx"
-        else:  # Szafki tab (default)
+        else:  # Szafki tab (domyślnie)
             table = self.TabelaSzafek
             export_type = "szafki"
             sheet_title = "Szafki"
@@ -1233,7 +1223,7 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
             
             log_event(
                 event_type="export",
-                locker_id=0,  # No specific locker
+                locker_id=0,  # Brak konkretnej szafki
                 before=None,
                 after={
                     'export_type': export_type,
@@ -1243,4 +1233,4 @@ class OknoGlowne(QMainWindow, Ui_MainWindow, LockersHandlersMixin, EmployeesHand
                 performed_by=performed_by
             )
         except Exception:
-            pass  # Don't fail export if logging fails
+            pass  # Nie przerywaj eksportu, jeśli logowanie się nie powiedzie

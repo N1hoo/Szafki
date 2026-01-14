@@ -14,7 +14,7 @@ class Ui_Dialog(object):
         Dialog.setObjectName("Dialog")
         Dialog.resize(900, 300)
 
-        # use layout managers so the dialog scales well and widgets don't overlap
+        # Użycie vertical layout jako głównego kontenera
         self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout.setSpacing(12)
         self.verticalLayout.setContentsMargins(15, 15, 15, 15)
@@ -28,7 +28,7 @@ class Ui_Dialog(object):
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel)
         self.buttonBox.setObjectName("buttonBox")
 
-        # Input widgets (no absolute geometry)
+        # Wejścia formularza
         self.ImieDP = QtWidgets.QLabel(parent=Dialog)
         self.ImieDP.setObjectName("ImieDP")
         self.DzialDP = QtWidgets.QLabel(parent=Dialog)
@@ -40,7 +40,6 @@ class Ui_Dialog(object):
         self.KodPracDP = QtWidgets.QLineEdit(parent=Dialog)
         self.KodPracDP.setMaxLength(6)
         self.KodPracDP.setObjectName("KodPracDP")
-        # Removed: NrSzSzDP1 (locker number textbox)
         self.ZmianaDP = QtWidgets.QLabel(parent=Dialog)
         self.ZmianaDP.setObjectName("ZmianaDP")
         self.label_6 = QtWidgets.QLabel(parent=Dialog)
@@ -59,7 +58,6 @@ class Ui_Dialog(object):
         self.label_11.setObjectName("label_11")
         self.label_12 = QtWidgets.QLabel(parent=Dialog)
         self.label_12.setObjectName("label_12")
-        # Removed: LosowaWolna button
         self.label_13 = QtWidgets.QLabel(parent=Dialog)
         self.label_13.setWordWrap(True)
         self.label_13.setObjectName("label_13")
@@ -70,7 +68,7 @@ class Ui_Dialog(object):
         self.DodajBtDP = QtWidgets.QPushButton(parent=Dialog)
         self.DodajBtDP.setObjectName("DodajBtDP")
 
-        # Build layout grid
+        # Budowa siatki formularza
         self.formGrid.addWidget(self.label_10, 0, 0)
         self.formGrid.addWidget(self.KodPracDP, 0, 1)
         self.formGrid.addWidget(self.label_9, 0, 2)
@@ -88,9 +86,8 @@ class Ui_Dialog(object):
         self.formGrid.addWidget(self.label_12, 2, 0)
         self.formGrid.addWidget(self.ZmianaDP, 2, 1)
         self.formGrid.addWidget(self.MiejsceDP, 2, 3)
-        # Removed: NrSzSzDP1, label_13, and label_14
 
-        # action buttons row
+        # Przyciski na dole
         btns = QtWidgets.QHBoxLayout()
         btns.setSpacing(10)
         btns.addStretch()
@@ -108,8 +105,8 @@ class Ui_Dialog(object):
         Dialog.setTabOrder(self.DodajBtDP, self.buttonBox)
 
         self.retranslateUi(Dialog)
-        self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
-        self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
+        self.buttonBox.accepted.connect(Dialog.accept) # typ: ignore
+        self.buttonBox.rejected.connect(Dialog.reject) # typ: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
     def retranslateUi(self, Dialog):
@@ -120,7 +117,6 @@ class Ui_Dialog(object):
         self.PlecDP.setWhatsThis(_translate("Dialog", "Typ dodawanych szafek"))
         self.NazwiskoDP.setWhatsThis(_translate("Dialog", "Wprowadź numer początkowej szafki (tej, od której numeru będą tworzyć się kolejne, np. 1 w przypadku, gdy tworzymy szafki od zera)"))
         self.KodPracDP.setWhatsThis(_translate("Dialog", "Wprowadź kod pracownika"))
-        # Removed: NrSzSzDP1 WhatsThis; ZmianaDP is now a label
         self.label_6.setText(_translate("Dialog", "Stanowisko"))
         self.label_8.setText(_translate("Dialog", "Dział"))
         self.label_7.setText(_translate("Dialog", "Płeć"))
@@ -128,8 +124,6 @@ class Ui_Dialog(object):
         self.label_10.setText(_translate("Dialog", "Kod pracow."))
         self.label_11.setText(_translate("Dialog", "Imię"))
         self.label_12.setText(_translate("Dialog", "Zmiana"))
-        # Removed: LosowaWolna and label_13 text
         self.MiejsceDP.setWhatsThis(_translate("Dialog", "Wybór miejsca, w którym znajdować się mają szafki"))
-        # Removed: label_14 (duplicate Szatnia label)
         self.StanowiskoDP.setWhatsThis(_translate("Dialog", "Wybór miejsca, w którym znajdować się mają szafki"))
         self.DodajBtDP.setText(_translate("Dialog", "Przydziel"))

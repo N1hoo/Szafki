@@ -1,3 +1,17 @@
+﻿# Bazy danych
+*.db
+
+# Dane pracowników (wrażliwe)
 pracownicy.csv
-szafki.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Środowisko wirtualne
+.venv/
+venv/
+
+# Stare pliki
 naprawadb.py
